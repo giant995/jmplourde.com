@@ -1,0 +1,36 @@
+title = "Jean-Michel Plourde personal website"
+baseURL = "https://jmplourde.com"
+languageCode = "en-us"
+theme = "ananke"
+themesDir = "./themes"
+
+DefaultContentLanguage = "en"
+SectionPagesMenu = "main"
+Paginate = 6 # this is set low for demonstrating with dummy content. Set to a higher number
+googleAnalytics = ""
+enableRobotsTXT = true
+
+[sitemap]
+  changefreq = "monthly"
+  priority = 0.5
+  filename = "sitemap.xml"
+
+[params]
+  favicon = ""
+  site_logo = ""
+  description = "Jean-Michel Plourde personal website"
+  facebook = ""
+  twitter = "https://twitter.com/j_mplourde"
+  instagram = ""
+  youtube = ""
+  github = "https://github.com/giant995"
+  gitlab = "https://github.com/giant995"
+  linkedin = "https://www.linkedin.com/in/jeanmichelplourde/"
+  mastodon = ""
+  slack = ""
+  stackoverflow = ""
+  rss = ""
+  # choose a background color from any on this page: http://tachyons.io/docs/themes/skins/ and preface it with "bg-"
+  background_color_class = "bg-light-purple"
+  featured_image = "/images/index_bg.jpg"
+  recent_posts_number = 4
