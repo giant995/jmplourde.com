@@ -4,7 +4,7 @@ date: 2021-03-15T10:39:37-04:00
 draft: false
 ---
 
-Welcome on my personnal website!
+Welcome on my personal website!
 
 I wanted to do this for years, but I always had a good reason (yeah right) to not do it. I recently started mentoring sessions with my incredible mentor [Gabriel LeBreton](www.gableroux.com) and one of my first assignment what to build myself a website. So here it is!
 
