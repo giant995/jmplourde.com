@@ -2,6 +2,7 @@ title = "Jean-Michel Plourde personal website"
 baseURL = "https://jmplourde.com"
 languageCode = "en-us"
 theme = "ananke"
+themesDir = "./themes"
 
 DefaultContentLanguage = "en"
 SectionPagesMenu = "main"
@@ -15,7 +16,7 @@ enableRobotsTXT = true
   filename = "sitemap.xml"
 
 [params]
-  favicon = ""
+  favicon = "/icons/favicon.ico"
   site_logo = ""
   description = "Jean-Michel Plourde personal website"
   facebook = ""
