@@ -2,6 +2,7 @@
 title: "Hello, world!"
 date: 2021-03-15T10:39:37-04:00
 draft: false
+featured_image: "/images/globe_and_map.jpg"
 ---
 
 Welcome on my personal website!
