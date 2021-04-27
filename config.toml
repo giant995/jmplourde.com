@@ -33,3 +33,6 @@ enableRobotsTXT = true
   background_color_class = "bg-purple"
   featured_image = ""
   recent_posts_number = 4
+
+[markup.goldmark.renderer]
+  unsafe= true
