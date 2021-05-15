@@ -1,6 +1,6 @@
 ---
 title: "Things to Expect When Attending Tech Meetups"
-date: 2021-05-15T13:25:01-04:00
+date: 2019-05-21T13:25:01-04:00
 draft: false
 ---
 **This post originally appeared on** [Dev.to](https://dev.to/bigj1m/your-local-meetup-has-so-much-to-offer-2ekf)
