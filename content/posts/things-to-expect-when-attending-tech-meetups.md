@@ -2,6 +2,7 @@
 title: "Things to Expect When Attending Tech Meetups"
 date: 2019-05-21T13:25:01-04:00
 draft: false
+featured_image: "https://i.postimg.cc/63mVLjvZ/adult-business-meeting-business-people-1438072.jpg"
 ---
 **This post originally appeared on** [Dev.to](https://dev.to/bigj1m/your-local-meetup-has-so-much-to-offer-2ekf)
 
