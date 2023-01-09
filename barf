@@ -1,0 +1,101 @@
+#!/bin/sh
+set -eu
+MARKDOWN=smu
+IFS='	'
+
+# Create tab separated file with filename, title, creation date, last update
+index_tsv() {
+	for f in "$1"/*.md
+	do
+		title=$(sed -n '/^# /{s/# //p; q}' "$f")
+		printf '%s\t%s\t%s\t%s\n' "$f" "${title:="No Title"}"
+	done
+}
+
+index_html() {
+	# Print header
+	title=$(sed -n '/^# /{s/# //p; q}' index.md)
+	sed "s/{{TITLE}}/$title/" header.html
+
+	# Intro text
+	$MARKDOWN index.md
+
+	# Posts
+	while read -r f title created; do
+		link=$(echo "$f" | sed -E 's|.*/(.*).md|\1/|')
+		created=$(echo $(head -3 "$f" | tail -1))
+	 	echo "<span class='created'>$created &mdash; <a href=\"$link\">$title</a></span>"
+	done < "$1" | sort -r
+
+	# Print footer after post list
+	cat footer.html
+}
+
+atom_xml() {
+	uri=$(sed -rn '/atom.xml/ s/.*href="([^"]*)".*/\1/ p' header.html)
+	domain=$(echo "$uri" | sed 's/atom.xml//g' | sed 's|/[^/]*$||')
+	first_commit_date=$(git log --pretty='format:%ai' . | cut -d ' ' -f1 | tail -1)
+
+	cat <<EOF
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+	<title>$(sed -n '/^# /{s/# //p; q}' index.md)</title>
+	<link href="$domain/atom.xml" rel="self" />
+	<updated>$(date +%FT%TZ)</updated>
+	<author>
+		<name>$(git config user.name)</name>
+	</author>
+	<id>$domain,$first_commit_date:default-atom-feed/</id>
+EOF
+
+	while read -r f title created; do
+
+		content=$($MARKDOWN "$f" | sed 's/&/\&amp;/g; s/</\&lt;/g; s/>/\&gt;/g; s/"/\&quot;/g; s/'"'"'/\&#39;/g')
+		post_link=$(echo "$f" | sed -E 's|posts/(.*).md|\1|')
+		basic_date=$(echo $(head -3 "$f" | tail -1))
+		published_date=$(date -d $basic_date +%FT%TZ)
+
+		cat <<EOF
+	<entry>
+		<title>$title</title>
+		<content type="html">$content</content>
+		<link href="$domain/$post_link"/>
+		<id>$domain/$post_link</id>
+		<updated>$published_date</updated>
+		<published>$published_date</published>
+	</entry>
+EOF
+	done < "$1"
+
+	echo '</feed>'
+}
+
+write_page() {
+	filename=$1
+	directory=$(echo $(basename "$filename" .md))
+	$(mkdir -p build/$directory)
+	target=$(echo "$filename" | sed -r 's|\w+/(.*).md|build/\1/index.html|')
+	created=$(echo $(head -3 "$filename" | tail -1))
+	title=$2
+
+	$MARKDOWN "$filename" | \
+		cat header.html - |\
+		sed "s|{{TITLE}}|$title|" \
+		> "$target" && cat footer.html >> "$target"
+}
+
+rm -fr build && mkdir build
+
+# Blog posts
+index_tsv posts | sort -rt "	" -k 3 > build/posts.tsv
+index_html build/posts.tsv > build/index.html
+atom_xml build/posts.tsv > build/atom.xml
+while read -r f title created; do
+	write_page "$f" "$title" "$created"
+done < build/posts.tsv
+
+# Pages
+index_tsv pages > build/pages.tsv
+while read -r f title created; do
+	write_page "$f" "$title" "$created"
+done < build/pages.tsv
