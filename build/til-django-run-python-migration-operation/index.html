@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>TIL: Running Python code as a migration operation in Django</title>
+	<link href="https://jmplourde.com/atom.xml" type="application/atom+xml" rel="alternate" title="jmplourde.com Atom feed" />
+	<style>
+		* {
+			box-sizing: border-box;
+		}
+		body {
+			font-family: sans-serif;
+			line-height: 1.45;
+			margin: 0 auto;
+			max-width: 45rem;
+			padding: 0 15px;
+		}
+		hr {
+			background-color: grey;
+			border: 0;
+			height: 1px;
+			margin: 2rem 0;
+		}
+		nav {
+			margin: 2rem 0 0;
+		}
+		main {
+			hyphens: auto;
+		}
+		main p {
+			margin: 1rem;
+		}
+		h1,h2,h3,h4 {
+			margin: 2rem 0 0;
+		}
+		h1 {
+			margin-bottom: 0.5rem;
+		}
+		h1 + p {
+			margin: 0 0 1rem;
+		}
+		span.created {
+			display: block;
+			margin: 4px 15px;
+		}
+		img {
+			border: 1px solid lightgrey;
+			height: auto;
+			max-width: 100%;
+			width: auto;
+		}
+		blockquote {
+			background-color: linen;
+			border-left: 4px solid lightcoral;
+			margin: 2rem 0;
+			padding: 10px;
+		}
+		blockquote p {
+			margin: 0;
+		}
+		figure {
+			margin: 2rem 0;
+		}
+		figcaption {
+			color: slategrey;
+		}
+		code {
+			background: #eee;
+			padding: 0.3rem;
+			tab-size: 4;
+		}
+		pre {
+			background: #eee;
+		}
+		pre code {
+			background: none;
+			display: block;
+			overflow-x: auto;
+			padding: 0.3rem 0.6rem;
+		}
+		table {
+			border-collapse: collapse;
+			margin: 2rem 0;
+			text-align: left;
+			width: 100%;
+		}
+		tr {
+			border-bottom: 1px solid lightgrey;
+		}
+		tr:nth-of-type(odd) td {
+			background-color: #f8f8f8;
+		}
+		th,td {
+			padding: 6px;
+		}
+		footer {
+			border-top: 1px dashed grey;
+			margin: 2rem 0;
+			padding: 1rem 15px;
+		}
+	</style>
+</head>
+
+<nav>
+	<strong>Jean-Michel Plourde</strong> <a href="/">Home</a><span> | </span><a href="/about">About</a><span> | </span><a href="/resume">Resume</a><span>
+</nav>
+
+<main>
+<h1>TIL: Running Python code as a migration operation in Django</h1>
+<p>2023-08-21</p>
+<p>When I started learning Django, I was confused with the difference between <code>makemigrations</code> and <code>migrate</code> commands. I got it after a while, but I never truly had to work with complex migrations or write custome ones. I recently had to write a custom migration to change a <code>ForeignKey</code> field to a <code>OneToOneField</code> and I used the <a href="https://docs.djangoproject.com/en/4.2/ref/migration-operations/#runsql">RunSQL</a> special operation which allows to run raw sql queries. It allowed me to better understand migrations and gave me the confidence to push my changes in production.</p>
+<p>Now I wanted to refactor an unnecessary many-to-many model into a one-to-one field in another model. The models looked like the following code:</p>
+<pre><code class="language-Python">from accounts import models as account_models
+
+
+# the model I want to get rid of
+class HomeAddress(BaseModel):
+    home = models.ForeignKey(Home, on_delete=models.CASCADE)
+    address = models.ForeignKey(
+        account_models.Address,
+        on_delete=models.CASCADE,
+    )
+    class Meta:
+        verbose_name_plural = &quot;home addresses&quot;
+
+
+class Home(BaseModel):
+    name = models.CharField(max_length=50, default=&quot;Home&quot;)
+    address = models.OneToOneField(  # the field I want to replace the model with
+        account_models.Address,
+        on_delete=models.PROTECT,
+    )
+
+</code></pre>
+<p>The challenge was to copy the <code>Address</code> refered in each <code>HomeAddress</code> row to the refered <code>Home</code>. I wasn't sure how I would solve this and dreaded the raw SQL query, not wanting to mess up the production data. I asked ChatGPT for some inspiration and it suggested using the <a href="https://docs.djangoproject.com/en/4.2/ref/migration-operations/#runpython">RunPython</a> special operation. You first declare a function that takes two arguments; the first being the name of the app containing the historical models that matches the operation and the second is an instance of <a href="https://docs.djangoproject.com/en/4.2/ref/schema-editor/#django.db.backends.base.schema.BaseDatabaseSchemaEditor">SchemaEditor</a> the class that turns operations into SQL. The function code describes the changes that will be applied.</p>
+<p>A second function is declared that accepts the same two arguments and its code should undo what has been done by the first function. This makes the migration reversible otherwise the changes are permanent. The two functions are passed to the <code>RunPython</code> function called inside the <code>operations</code> list of the <code>Migration</code> class. For database backends that do not support <a href="https://en.wikipedia.org/wiki/Data_definition_language">Data Definition Language (DDL)</a> transactions (<code>CREATE</code>, <code>ALTER</code>, etc.), <code>RunPython</code> will run its content inside a transaction.</p>
+<p>For databases that do support DDL like PostgreSQL, no other transactions are added besides the one generated by a migration. A migration with both schema changes and <code>RunPython</code> operation will raise an exception stating the changes cannot be applied because it has pending trigger events.</p>
+<p>What I ended up doing is generating a migration to add the <code>Home.address</code> field, then generated an empty migration and wrote the following code:</p>
+<pre><code class="language-Python">from django.db import migrations
+
+from accounts import models as account_models
+
+
+def replace_home_with_address(apps, schema_editor):
+    home_address_model = apps.get_model('nodz', 'HomeAddress')
+
+    for home_address in home_address_model.objects.all():
+        address = home_address.address
+        address = account_models.Address.objects.create(
+	    address_line_1=f&quot;123 Fake Street&quot;,
+	    address_line_2=&quot;Building 1&quot;,
+	    city=&quot;Test City&quot;,
+	    zip_code=&quot;12345&quot;,
+	    country_id=home_address.address.country.id,
+	    subdivision_id=home_address.address.subdivision.id,
+        )
+        home_address.home.address_id = address.id
+        home_address.home.save()
+
+
+class Migration(migrations.Migration):
+
+    dependencies = [
+        ('nodz', '0050_auto_20230821_1308'),
+    ]
+
+    operations = [
+        migrations.RunPython(replace_home_with_address),
+    ]
+
+</code></pre>
+<p>So here, I loop over the <code>HomeAddress</code> rows and for each one of them, I put the <code>HomeAddress.address</code> reference into <code>HomeAddress.home.address</code> and save. Note that for readability purpose, I didn't include the query prefetching code.</p>
+<footer role="contentinfo">
+    <span><a href="#">↑ Back to Top</a></span><br><br>
+    <small>
+        Built with <a href="https://git.sr.ht/~bt/barf">barf</a>. <br>
+    </small>
+</footer>
