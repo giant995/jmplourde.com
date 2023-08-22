@@ -27,7 +27,13 @@ cd smu
 sudo make install
 ```
 
-Then clone this repo, navigate inside the directory and build:
+## Write Blog Posts
+
+Create an `.md` file inside `/posts`. The first line should be a markdown h1 title, followed by a blank line followed by the publishing date on a newline. There should be another blank line before the post content.
+
+## Build
+
+After cloning this repo, navigate inside the directory and build:
 
 ```sh
 make build
