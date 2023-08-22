@@ -6,7 +6,7 @@ When I started learning Django, I was confused with the difference between `make
 
 Now I wanted to refactor an unnecessary many-to-many model into a one-to-one field in another model. The models looked like the following code:
 
-```Python
+```python
 from accounts import models as account_models
 
 
@@ -38,7 +38,7 @@ For databases that do support DDL like PostgreSQL, no other transactions are add
 
 What I ended up doing is generating a migration to add the `Home.address` field, then generated an empty migration and wrote the following code:
 
-```Python
+```python
 from django.db import migrations
 
 from accounts import models as account_models
