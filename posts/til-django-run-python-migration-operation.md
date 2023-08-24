@@ -64,7 +64,7 @@ def replace_home_with_address(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('my_app', '0050_auto_20230821_1308'),
+        ('my_app', '0002_auto_20230821_1308'),
     ]
 
     operations = [
