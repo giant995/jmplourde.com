@@ -45,7 +45,7 @@ from accounts import models as account_models
 
 
 def replace_home_with_address(apps, schema_editor):
-    home_address_model = apps.get_model('nodz', 'HomeAddress')
+    home_address_model = apps.get_model('my_app', 'HomeAddress')
 
     for home_address in home_address_model.objects.all():
         address = home_address.address
@@ -64,7 +64,7 @@ def replace_home_with_address(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('nodz', '0050_auto_20230821_1308'),
+        ('my_app', '0050_auto_20230821_1308'),
     ]
 
     operations = [
